@@ -1,27 +1,7 @@
-*.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
-local.properties
-
-# Android Studio / IntelliJ
-*.ipr
-*.iws
-.idea/
-
 # Built application files
 *.apk
 *.aar
+*.ap_
 *.aab
 
 # Files for the ART/Dalvik VM
@@ -34,11 +14,45 @@ local.properties
 bin/
 gen/
 out/
+build/
 app/build/
 
 # Gradle files
 .gradle/
-build/
+
+# Local configuration file (SDK path, keystore etc.)
+local.properties
+
+# Proguard / R8 mappings
+proguard/
+
+# Android Studio / IntelliJ IDEA
+*.iml
+.idea/
+*.ipr
+*.iws
+
+# Android Studio Navigation editor temp files
+.navigation/
+
+# Android Studio captures
+captures/
+
+# External native build
+.externalNativeBuild/
+.cxx/
 
 # Log files
 *.log
+
+# NDK
+obj/
+ndkBuild/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# Ensure Gradle Wrapper jar is tracked
+!gradle/wrapper/gradle-wrapper.jar
