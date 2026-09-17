@@ -23,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Repeat
+import androidx.compose.material.icons.filled.RepeatOne
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
@@ -45,10 +46,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.media3.common.Player
 import com.retro.squareman.data.model.Track
 
 /**
- * Walkman / PSPMAN 風デジタル・プレイヤー UI (1:1 正方形ディスプレイ最適化・中央縦配置)
+ * Walkman / PSPMAN 風デジタル・プレイヤー UI (シャッフル・リピート対応)
  */
 @Composable
 fun DigitalPlayerView(
@@ -56,9 +58,13 @@ fun DigitalPlayerView(
     isPlaying: Boolean,
     currentPositionMs: Long,
     durationMs: Long,
+    isShuffle: Boolean,
+    repeatMode: Int,
     onTogglePlayPause: () -> Unit,
     onSkipNext: () -> Unit,
     onSkipPrevious: () -> Unit,
+    onToggleShuffle: () -> Unit,
+    onToggleRepeat: () -> Unit,
     onSeekTo: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -83,7 +89,7 @@ fun DigitalPlayerView(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        // --- 1. 上部〜中央: 正方形アートワーク領域 (中央ドカン配置) ---
+        // --- 1. 上部〜中央: 正方形アートワーク領域 ---
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.padding(top = 4.dp)
@@ -233,12 +239,15 @@ fun DigitalPlayerView(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // シャッフル
+            // シャッフル (クリックでON/OFF切り替え)
             Icon(
                 imageVector = Icons.Default.Shuffle,
                 contentDescription = "Shuffle",
-                tint = textMuted,
-                modifier = Modifier.size(20.dp)
+                tint = if (isShuffle) orangeRed else textMuted,
+                modifier = Modifier
+                    .size(22.dp)
+                    .clip(CircleShape)
+                    .clickable { onToggleShuffle() }
             )
 
             // PREV
@@ -257,7 +266,7 @@ fun DigitalPlayerView(
                     .size(54.dp)
                     .clip(CircleShape)
                     .border(2.5.dp, orangeRed, CircleShape)
-                    .clickable { onTogglePlayPause() },
+                .clickable { onTogglePlayPause() },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -278,12 +287,22 @@ fun DigitalPlayerView(
                     .clickable { onSkipNext() }
             )
 
-            // リピート
+            // リピート (クリックで OFF -> ALL -> ONE -> OFF 切り替え)
+            val repeatIcon = if (repeatMode == Player.REPEAT_MODE_ONE) {
+                Icons.Default.RepeatOne
+            } else {
+                Icons.Default.Repeat
+            }
+            val repeatColor = if (repeatMode != Player.REPEAT_MODE_OFF) orangeRed else textMuted
+
             Icon(
-                imageVector = Icons.Default.Repeat,
+                imageVector = repeatIcon,
                 contentDescription = "Repeat",
-                tint = textMuted,
-                modifier = Modifier.size(20.dp)
+                tint = repeatColor,
+                modifier = Modifier
+                    .size(22.dp)
+                    .clip(CircleShape)
+                    .clickable { onToggleRepeat() }
             )
         }
     }

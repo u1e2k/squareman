@@ -153,9 +153,12 @@ class MainActivity : ComponentActivity() {
                         return true
                     }
                 }
-                KeyEvent.KEYCODE_BUTTON_X,
-                KeyEvent.KEYCODE_BUTTON_Y -> {
+                KeyEvent.KEYCODE_BUTTON_X -> {
                     viewModel.onButtonX()
+                    return true
+                }
+                KeyEvent.KEYCODE_BUTTON_Y -> {
+                    viewModel.onButtonY()
                     return true
                 }
                 KeyEvent.KEYCODE_BUTTON_L1,
@@ -193,6 +196,8 @@ fun MainScreen(viewModel: MainViewModel) {
     val isPlaying by viewModel.isPlaying.collectAsState()
     val currentPosition by viewModel.currentPosition.collectAsState()
     val duration by viewModel.duration.collectAsState()
+    val isShuffle by viewModel.isShuffle.collectAsState()
+    val repeatMode by viewModel.repeatMode.collectAsState()
 
     val rootFocusRequester = remember { FocusRequester() }
 
@@ -248,9 +253,13 @@ fun MainScreen(viewModel: MainViewModel) {
                                     isPlaying = isPlaying,
                                     currentPositionMs = currentPosition,
                                     durationMs = duration,
+                                    isShuffle = isShuffle,
+                                    repeatMode = repeatMode,
                                     onTogglePlayPause = { viewModel.togglePlayPause() },
                                     onSkipNext = { viewModel.playNextTrack() },
                                     onSkipPrevious = { viewModel.playPreviousTrack() },
+                                    onToggleShuffle = { viewModel.toggleShuffle() },
+                                    onToggleRepeat = { viewModel.toggleRepeat() },
                                     onSeekTo = { pos -> viewModel.seekTo(pos) }
                                 )
                             }

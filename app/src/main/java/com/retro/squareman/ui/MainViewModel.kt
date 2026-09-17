@@ -72,6 +72,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _duration = MutableStateFlow(0L)
     val duration: StateFlow<Long> = _duration.asStateFlow()
 
+    // シャッフル & リピート状態
+    private val _isShuffle = MutableStateFlow(prefs.getBoolean("is_shuffle", false))
+    val isShuffle: StateFlow<Boolean> = _isShuffle.asStateFlow()
+
+    private val _repeatMode = MutableStateFlow(prefs.getInt("repeat_mode", Player.REPEAT_MODE_ALL))
+    val repeatMode: StateFlow<Int> = _repeatMode.asStateFlow()
+
     private var controllerFuture: ListenableFuture<MediaController>? = null
     private var mediaController: MediaController? = null
     private var progressPollJob: Job? = null
@@ -101,6 +108,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             if (list.isNotEmpty() && _currentPlayingTrack.value == null) {
                 _selectedTrackIndex.value = 0
             }
+            // プレイリストをコントローラーに同期
+            syncPlaylist()
         }
     }
 
@@ -114,6 +123,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 mediaController = controllerFuture?.get()
                 setupPlayerListener()
+                applyShuffleAndRepeat()
+                syncPlaylist()
                 startProgressPolling()
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -135,9 +146,39 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 val mediaId = mediaItem?.mediaId
                 val matched = _tracks.value.find { it.id.toString() == mediaId }
                 _currentPlayingTrack.value = matched
+                matched?.let {
+                    _selectedTrackIndex.value = _tracks.value.indexOf(it).coerceAtLeast(0)
+                }
                 updatePlaybackTimes()
             }
+
+            override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
+                _isShuffle.value = shuffleModeEnabled
+            }
+
+            override fun onRepeatModeChanged(repeatMode: Int) {
+                _repeatMode.value = repeatMode
+            }
         })
+    }
+
+    private fun applyShuffleAndRepeat() {
+        mediaController?.let { controller ->
+            controller.shuffleModeEnabled = _isShuffle.value
+            controller.repeatMode = _repeatMode.value
+        }
+    }
+
+    private fun syncPlaylist() {
+        val controller = mediaController ?: return
+        val list = _tracks.value
+        if (list.isEmpty()) return
+
+        if (controller.mediaItemCount == 0) {
+            val mediaItems = list.map { it.toMediaItem() }
+            controller.setMediaItems(mediaItems)
+            controller.prepare()
+        }
     }
 
     private fun startProgressPolling() {
@@ -156,6 +197,26 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _duration.value = if (controller.duration > 0) controller.duration else 0L
             _isPlaying.value = controller.isPlaying
         }
+    }
+
+    // --- シャッフル & リピート切り替え ---
+
+    fun toggleShuffle() {
+        val next = !_isShuffle.value
+        _isShuffle.value = next
+        mediaController?.shuffleModeEnabled = next
+        prefs.edit().putBoolean("is_shuffle", next).apply()
+    }
+
+    fun toggleRepeat() {
+        val nextMode = when (_repeatMode.value) {
+            Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ALL
+            Player.REPEAT_MODE_ALL -> Player.REPEAT_MODE_ONE
+            else -> Player.REPEAT_MODE_OFF
+        }
+        _repeatMode.value = nextMode
+        mediaController?.repeatMode = nextMode
+        prefs.edit().putInt("repeat_mode", nextMode).apply()
     }
 
     // --- スタイル切り替え ---
@@ -197,7 +258,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // --- 物理キー入力ルーティング (DPADは純粋なUI操作に専念) ---
+    // --- 物理キー入力ルーティング ---
 
     fun onDpadUp() {
         when (_currentScreen.value) {
@@ -208,7 +269,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
             AppScreen.CASSETTE, AppScreen.SPECTRUM_FULL -> {
-                // プレイヤー画面でのUI操作（上方向）
+                // プレイヤー画面でのUI操作
             }
         }
     }
@@ -223,7 +284,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
             AppScreen.CASSETTE, AppScreen.SPECTRUM_FULL -> {
-                // プレイヤー画面でのUI操作（下方向）
+                // プレイヤー画面でのUI操作
             }
         }
     }
@@ -231,11 +292,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun onDpadLeft() {
         when (_currentScreen.value) {
             AppScreen.CASSETTE, AppScreen.SPECTRUM_FULL -> {
-                // プレイヤー画面ではシーク巻き戻し（5秒）
                 onRewind()
             }
             AppScreen.LIBRARY -> {
-                // ライブラリ画面でのページアップ等のUI操作
                 val current = _selectedTrackIndex.value
                 _selectedTrackIndex.value = (current - 5).coerceAtLeast(0)
             }
@@ -245,11 +304,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun onDpadRight() {
         when (_currentScreen.value) {
             AppScreen.CASSETTE, AppScreen.SPECTRUM_FULL -> {
-                // プレイヤー画面ではシーク早送り（5秒）
                 onFastForward()
             }
             AppScreen.LIBRARY -> {
-                // ライブラリ画面でのページダウン等のUI操作
                 val current = _selectedTrackIndex.value
                 val max = _tracks.value.size - 1
                 _selectedTrackIndex.value = (current + 5).coerceAtMost(max)
@@ -257,13 +314,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /**
-     * 決定キー (Aボタン)
-     */
     fun onButtonA() {
         when (_currentScreen.value) {
             AppScreen.LIBRARY -> {
-                // リスト選択中の曲を決定して再生開始、プレイヤー画面へ移行
                 val list = _tracks.value
                 val index = _selectedTrackIndex.value
                 if (index in list.indices) {
@@ -272,7 +325,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
             AppScreen.CASSETTE, AppScreen.SPECTRUM_FULL -> {
-                // 再生 / 一時停止トグル決定
                 togglePlayPause()
             }
         }
@@ -283,18 +335,26 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             AppScreen.SPECTRUM_FULL -> _currentScreen.value = AppScreen.CASSETTE
             AppScreen.CASSETTE -> _currentScreen.value = AppScreen.LIBRARY
             AppScreen.LIBRARY -> {
-                // ライブラリ画面の場合はそのまま
             }
         }
     }
 
     fun onButtonX() {
-        // Xボタンでスタイル切り替え（DIGITAL ⇔ INDEX CASSETTE ⇔ SKELETON）
         togglePlayerStyle()
     }
 
+    fun onButtonY() {
+        when (_currentScreen.value) {
+            AppScreen.CASSETTE, AppScreen.SPECTRUM_FULL -> {
+                toggleRepeat()
+            }
+            AppScreen.LIBRARY -> {
+                toggleShuffle()
+            }
+        }
+    }
+
     fun onButtonL1() {
-        // ビュー左切り替え: SPECTRUM_FULL -> CASSETTE -> LIBRARY
         _currentScreen.value = when (_currentScreen.value) {
             AppScreen.SPECTRUM_FULL -> AppScreen.CASSETTE
             AppScreen.CASSETTE -> AppScreen.LIBRARY
@@ -303,7 +363,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun onButtonR1() {
-        // ビュー右切り替え: LIBRARY -> CASSETTE -> SPECTRUM_FULL
         _currentScreen.value = when (_currentScreen.value) {
             AppScreen.LIBRARY -> AppScreen.CASSETTE
             AppScreen.CASSETTE -> AppScreen.SPECTRUM_FULL
@@ -311,39 +370,31 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /**
-     * L2ボタン: 前の曲へスキップ
-     */
     fun onButtonL2() {
         playPreviousTrack()
     }
 
-    /**
-     * R2ボタン: 次の曲へスキップ
-     */
     fun onButtonR2() {
         playNextTrack()
     }
 
     fun playTrack(track: Track) {
         val controller = mediaController ?: return
-        val mediaItem = MediaItem.Builder()
-            .setMediaId(track.id.toString())
-            .setUri(track.uri)
-            .setMediaMetadata(
-                androidx.media3.common.MediaMetadata.Builder()
-                    .setTitle(track.title)
-                    .setArtist(track.artist)
-                    .setAlbumTitle(track.album)
-                    .build()
-            )
-            .build()
+        val list = _tracks.value
+        val index = list.indexOfFirst { it.id == track.id }
+        if (index == -1) return
 
-        controller.setMediaItem(mediaItem)
+        if (controller.mediaItemCount != list.size) {
+            val mediaItems = list.map { it.toMediaItem() }
+            controller.setMediaItems(mediaItems, index, 0L)
+        } else {
+            controller.seekTo(index, 0L)
+        }
+
         controller.prepare()
         controller.play()
         _currentPlayingTrack.value = track
-        _selectedTrackIndex.value = _tracks.value.indexOfFirst { it.id == track.id }.coerceAtLeast(0)
+        _selectedTrackIndex.value = index
     }
 
     fun togglePlayPause() {
@@ -361,19 +412,49 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun playNextTrack() {
-        val list = _tracks.value
-        if (list.isEmpty()) return
-        val currentIndex = list.indexOfFirst { it.id == _currentPlayingTrack.value?.id }
-        val nextIndex = if (currentIndex in list.indices) (currentIndex + 1) % list.size else 0
-        playTrack(list[nextIndex])
+        val controller = mediaController
+        if (controller != null && controller.hasNextMediaItem()) {
+            controller.seekToNextMediaItem()
+            controller.play()
+        } else {
+            val list = _tracks.value
+            if (list.isEmpty()) return
+            val currentIndex = list.indexOfFirst { it.id == _currentPlayingTrack.value?.id }
+            val nextIndex = if (_isShuffle.value) {
+                list.indices.random()
+            } else {
+                if (currentIndex in list.indices) (currentIndex + 1) % list.size else 0
+            }
+            playTrack(list[nextIndex])
+        }
     }
 
     fun playPreviousTrack() {
-        val list = _tracks.value
-        if (list.isEmpty()) return
-        val currentIndex = list.indexOfFirst { it.id == _currentPlayingTrack.value?.id }
-        val prevIndex = if (currentIndex > 0) currentIndex - 1 else list.size - 1
-        playTrack(list[prevIndex])
+        val controller = mediaController
+        if (controller != null && controller.hasPreviousMediaItem()) {
+            controller.seekToPreviousMediaItem()
+            controller.play()
+        } else {
+            val list = _tracks.value
+            if (list.isEmpty()) return
+            val currentIndex = list.indexOfFirst { it.id == _currentPlayingTrack.value?.id }
+            val prevIndex = if (currentIndex > 0) currentIndex - 1 else list.size - 1
+            playTrack(list[prevIndex])
+        }
+    }
+
+    private fun Track.toMediaItem(): MediaItem {
+        return MediaItem.Builder()
+            .setMediaId(id.toString())
+            .setUri(uri)
+            .setMediaMetadata(
+                androidx.media3.common.MediaMetadata.Builder()
+                    .setTitle(title)
+                    .setArtist(artist)
+                    .setAlbumTitle(album)
+                    .build()
+            )
+            .build()
     }
 
     override fun onCleared() {
