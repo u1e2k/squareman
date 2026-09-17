@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,12 +32,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.painterResource
@@ -47,19 +48,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.retro.squareman.R
 import com.retro.squareman.data.model.Track
-import com.retro.squareman.ui.theme.PSPAccentBlue
-import com.retro.squareman.ui.theme.RetroBorder
-import com.retro.squareman.ui.theme.RetroDarkBg
-import com.retro.squareman.ui.theme.RetroFocusAmber
-import com.retro.squareman.ui.theme.RetroPanelBg
-import com.retro.squareman.ui.theme.RetroSurface
-import com.retro.squareman.ui.theme.RetroTextDim
-import com.retro.squareman.ui.theme.RetroTextPrimary
-import com.retro.squareman.ui.theme.RetroTextSecondary
 import kotlin.math.sqrt
 
 /**
- * 透過PNG素材を重ね合わせたスプライトレイヤー構造のカセットデッキ
+ * 80s ヴィンテージ・オーディオ カセットデッキ UI
+ * (本物の1980年代カセットテープ・スプライトレイヤー＆機械式カウンター搭載)
  */
 @Composable
 fun CassetteDeckView(
@@ -80,7 +73,7 @@ fun CassetteDeckView(
     var leftReelAngle by remember { mutableFloatStateOf(0f) }
     var rightReelAngle by remember { mutableFloatStateOf(0f) }
 
-    // リール回転物理計算
+    // リール回転物理計算 (テープ残量に反比例したリアルな角速度)
     LaunchedEffect(isPlaying, progress) {
         if (!isPlaying) return@LaunchedEffect
         var lastFrameTime = 0L
@@ -107,128 +100,231 @@ fun CassetteDeckView(
         }
     }
 
+    // レトロウォークマン風カラーパレット
+    val deckBg = Color(0xFF14161B)
+    val deckPocketBg = Color(0xFF0D0F13)
+    val deckBorder = Color(0xFF2E3340)
+    val amberAccent = Color(0xFFFF9F1C)
+    val textRetroBeige = Color(0xFFEDE8DD)
+    val textRetroDim = Color(0xFF8A909E)
+    val ledGreen = if (isPlaying) Color(0xFF38EF7D) else Color(0xFF164724)
+
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(RetroDarkBg)
-            .padding(10.dp),
+            .background(deckBg)
+            .padding(horizontal = 14.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        // --- 1. カセット本体 (スプライトレイヤー構造) ---
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f, fill = false)
-                .aspectRatio(1.55f)
-                .clip(RoundedCornerShape(8.dp))
-        ) {
-            SpriteCassetteLayers(
-                progress = progress,
-                leftReelAngle = leftReelAngle,
-                rightReelAngle = rightReelAngle,
-                trackTitle = track?.title ?: "PSPMAN",
-                artistName = track?.artist ?: "OBSOLETESONY"
-            )
-        }
-
-        Spacer(modifier = Modifier.height(6.dp))
-
-        // --- 2. メタデータ & アートワーク表示領域 ---
+        // --- 1. デッキ上部: レトロオーディオ・インジケーター & 3桁アナログカウンター ---
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(8.dp))
-                .background(RetroSurface)
-                .border(1.dp, RetroBorder, RoundedCornerShape(8.dp))
-                .padding(8.dp),
+                .padding(horizontal = 4.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // アートワーク
-            Box(
+            // 左側: モデル銘板 & PLAY LEDランプ
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // PLAY LEDランプ
+                Box(
+                    modifier = Modifier
+                        .size(10.dp)
+                        .shadow(elevation = if (isPlaying) 6.dp else 0.dp, shape = CircleShape)
+                        .background(ledGreen, CircleShape)
+                        .border(1.5.dp, Color(0xFF2A303C), CircleShape)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "PLAY",
+                    color = if (isPlaying) textRetroBeige else textRetroDim,
+                    fontSize = 9.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.width(14.dp))
+
+                // ステレオバッジ
+                Text(
+                    text = "STEREO CASSETTE DECK",
+                    color = textRetroDim,
+                    fontSize = 8.5.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+
+            // 右側: 3桁機械式テープカウンター [ 0 | 4 | 2 ]
+            val counterVal = ((currentPositionMs / 1000) % 1000).toInt()
+            val digit1 = (counterVal / 100) % 10
+            val digit2 = (counterVal / 10) % 10
+            val digit3 = counterVal % 10
+
+            Row(
                 modifier = Modifier
-                    .size(52.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(RetroPanelBg)
-                    .border(1.dp, PSPAccentBlue.copy(alpha = 0.6f), RoundedCornerShape(4.dp)),
-                contentAlignment = Alignment.Center
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(Color(0xFF0A0C0E))
+                    .border(1.dp, Color(0xFF383F50), RoundedCornerShape(3.dp))
+                    .padding(horizontal = 5.dp, vertical = 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(3.dp)
             ) {
-                if (track?.artwork != null) {
-                    Image(
-                        bitmap = track.artwork.asImageBitmap(),
-                        contentDescription = "Artwork",
-                        modifier = Modifier.fillMaxSize()
-                    )
-                } else {
+                Text(
+                    text = "TAPE",
+                    color = amberAccent,
+                    fontSize = 7.5.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold
+                )
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(Color(0xFF1E222A))
+                        .padding(horizontal = 3.dp, vertical = 1.dp)
+                ) {
                     Text(
-                        text = "♪",
-                        color = PSPAccentBlue,
-                        fontSize = 22.sp,
+                        text = "$digit1 $digit2 $digit3",
+                        color = Color.White,
+                        fontSize = 11.sp,
+                        fontFamily = FontFamily.Monospace,
                         fontWeight = FontWeight.Bold
                     )
                 }
             }
+        }
 
-            Spacer(modifier = Modifier.width(10.dp))
+        // --- 2. 中央: カセット挿入ポケット (カセットウェル) ＆ 本物のヴィンテージカセット ---
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f, fill = false)
+                .aspectRatio(1.53f)
+                .shadow(8.dp, RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(8.dp))
+                .background(deckPocketBg)
+                .border(2.dp, deckBorder, RoundedCornerShape(8.dp))
+                .padding(6.dp)
+        ) {
+            VintageCassetteLayers(
+                progress = progress,
+                leftReelAngle = leftReelAngle,
+                rightReelAngle = rightReelAngle,
+                trackTitle = track?.title ?: "PSPMAN RETRO",
+                artistName = track?.artist ?: "1980s VINTAGE"
+            )
+        }
 
-            // 曲情報テキスト
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = track?.title ?: "No Track Selected",
-                    color = RetroTextPrimary,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.Monospace,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+        // --- 3. デッキ下部: アナログ風プログレススケール & タイムコード ---
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp, vertical = 4.dp)
+        ) {
+            // アナログチューナー風プログレスバー
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(18.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(Color(0xFF0E1015))
+                    .border(1.dp, Color(0xFF2A2F3D), RoundedCornerShape(4.dp))
+                    .padding(horizontal = 6.dp),
+                contentAlignment = Alignment.CenterStart
+            ) {
+                // 背景目盛り
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    val step = size.width / 20f
+                    for (i in 0..20) {
+                        val x = i * step
+                        val h = if (i % 5 == 0) size.height * 0.7f else size.height * 0.4f
+                        val y = (size.height - h) / 2f
+                        drawLine(
+                            color = Color(0xFF282E3D),
+                            start = Offset(x, y),
+                            end = Offset(x, y + h),
+                            strokeWidth = 1f
+                        )
+                    }
+                }
+
+                // 進行バー
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(fraction = progress)
+                        .height(3.dp)
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(amberAccent.copy(alpha = 0.6f), amberAccent)
+                            )
+                        )
                 )
-                Spacer(modifier = Modifier.height(1.dp))
-                Text(
-                    text = track?.artist ?: "--",
-                    color = RetroTextSecondary,
-                    fontSize = 11.sp,
-                    fontFamily = FontFamily.Monospace,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(modifier = Modifier.height(1.dp))
-                Text(
-                    text = track?.album ?: "--",
-                    color = RetroTextDim,
-                    fontSize = 9.sp,
-                    fontFamily = FontFamily.Monospace,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+
+                // アナログ指針 (オレンジのインジケーターピン)
+                BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                    val indicatorX = maxWidth * progress
+                    Box(
+                        modifier = Modifier
+                            .offset(x = (indicatorX - 1.5.dp).coerceAtLeast(0.dp))
+                            .width(3.dp)
+                            .height(14.dp)
+                            .background(amberAccent, RoundedCornerShape(1.dp))
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
-            // タイムコード
-            Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    text = formatTime(currentPositionMs),
-                    color = PSPAccentBlue,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.Monospace
-                )
-                Text(
-                    text = "/ " + formatTime(durationMs),
-                    color = RetroTextDim,
-                    fontSize = 9.5.sp,
-                    fontFamily = FontFamily.Monospace
-                )
+            // タイムコード ＆ フォーマット表示
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "TYPE I [NORMAL BIAS]",
+                        color = textRetroDim,
+                        fontSize = 8.5.sp,
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "DOLBY B NR",
+                        color = amberAccent.copy(alpha = 0.8f),
+                        fontSize = 8.5.sp,
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = formatTime(currentPositionMs),
+                        color = amberAccent,
+                        fontSize = 12.sp,
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = " / " + formatTime(durationMs),
+                        color = textRetroDim,
+                        fontSize = 10.sp,
+                        fontFamily = FontFamily.Monospace
+                    )
+                }
             }
         }
     }
 }
 
 /**
- * 透過PNG素材を多層に重ねてリールを回転させるスプライトコア
+ * 本物の80sヴィンテージカセットテープ 多層スプライトレンダリング
  */
 @Composable
-private fun SpriteCassetteLayers(
+private fun VintageCassetteLayers(
     progress: Float,
     leftReelAngle: Float,
     rightReelAngle: Float,
@@ -239,39 +335,36 @@ private fun SpriteCassetteLayers(
         val totalWidth = maxWidth
         val totalHeight = maxHeight
 
-        // 基準画像サイズ 800 x 516 に対するスケーリング
-        // 窓座標: winX = 136, winY = 200, winW = 528, winH = 227
-        // 左リール中心: x = 270 (33.75%), y = 313 (60.65%)
-        // 右リール中心: x = 530 (66.25%), y = 313 (60.65%)
-        // リール直径: 約 130px (16.25% of width)
+        // 基準画像サイズ 1019 x 665
+        // 左リール中心: x = 297/1019 = 0.2915, y = 337/665 = 0.5068
+        // 右リール中心: x = 721/1019 = 0.7075, y = 337/665 = 0.5068
+        val leftReelCenterX = totalWidth * 0.2915f
+        val rightReelCenterX = totalWidth * 0.7075f
+        val reelCenterY = totalHeight * 0.5068f
+        val reelSize = totalWidth * 0.18f
 
-        val reelSize = totalWidth * 0.19f
-        val reelCenterY = totalHeight * 0.605f
-        val leftReelCenterX = totalWidth * 0.335f
-        val rightReelCenterX = totalWidth * 0.665f
-
-        // --- LAYER 1 (最背面): 背面プレート (cassette_body_back.png) ---
+        // --- LAYER 1 (最背面): カセット背面プレート (cassette_vintage_back.png) ---
         Image(
-            painter = painterResource(id = R.drawable.cassette_body_back),
+            painter = painterResource(id = R.drawable.cassette_vintage_back),
             contentDescription = null,
             modifier = Modifier.fillMaxSize()
         )
 
-        // --- LAYER 1.5: 窓内の動的テープ巻き (進捗率に応じた残量変化) ---
+        // --- LAYER 2: 窓の奥のリアルな磁気テープ巻き取り (進捗率 0%〜100% で動的移行) ---
         Canvas(modifier = Modifier.fillMaxSize()) {
-            drawTapeWinding(
+            drawVintageTapeWinding(
                 progress = progress,
-                leftCenter = Offset(size.width * 0.335f, size.height * 0.605f),
-                rightCenter = Offset(size.width * 0.665f, size.height * 0.605f),
-                hubR = size.width * 0.085f,
-                maxR = size.width * 0.155f
+                leftCenter = Offset(size.width * 0.2915f, size.height * 0.5068f),
+                rightCenter = Offset(size.width * 0.7075f, size.height * 0.5068f),
+                hubR = size.width * 0.088f,
+                maxR = size.width * 0.178f
             )
         }
 
-        // --- LAYER 2: 独立回転する左右の透過リールスプライト (cassette_reel.png) ---
+        // --- LAYER 3: 独立回転する左右のヴィンテージスプロケットハブ (cassette_vintage_reel.png) ---
         // 左リール
         Image(
-            painter = painterResource(id = R.drawable.cassette_reel),
+            painter = painterResource(id = R.drawable.cassette_vintage_reel),
             contentDescription = "Left Reel",
             modifier = Modifier
                 .size(reelSize)
@@ -284,7 +377,7 @@ private fun SpriteCassetteLayers(
 
         // 右リール
         Image(
-            painter = painterResource(id = R.drawable.cassette_reel),
+            painter = painterResource(id = R.drawable.cassette_vintage_reel),
             contentDescription = "Right Reel",
             modifier = Modifier
                 .size(reelSize)
@@ -295,80 +388,83 @@ private fun SpriteCassetteLayers(
                 .rotate(rightReelAngle)
         )
 
-        // --- LAYER 3: 前面シェル (cassette_body_front.png - 窓部完全透過) ---
+        // --- LAYER 4: カセット前面シェル (cassette_vintage_front.png) ---
         Image(
-            painter = painterResource(id = R.drawable.cassette_body_front),
-            contentDescription = "Cassette Front",
+            painter = painterResource(id = R.drawable.cassette_vintage_front),
+            contentDescription = "Vintage Cassette Front",
             modifier = Modifier.fillMaxSize()
         )
 
-        // --- LAYER 4: ラベルテキストオーバーレイ (曲名・アーティスト名) ---
+        // --- LAYER 5: 手書き/テプラ風インデックスラベル文字 (曲名・アーティスト名) ---
+        // ラベル枠: X = 0.426 * width, Y = 0.125 * height, 幅 0.48 * width, 高 0.168 * height
+        val labelOffsetX = totalWidth * 0.44f
+        val labelOffsetY = totalHeight * 0.13f
+        val labelWidth = totalWidth * 0.46f
+
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = totalHeight * 0.05f, start = totalWidth * 0.12f, end = totalWidth * 0.12f)
+                .offset(x = labelOffsetX, y = labelOffsetY)
+                .width(labelWidth)
+                .padding(start = 28.dp, top = 2.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = trackTitle.uppercase(),
-                    color = Color.White,
-                    fontSize = 11.sp,
-                    fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = artistName.uppercase(),
-                    color = RetroFocusAmber,
-                    fontSize = 10.sp,
-                    fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Medium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
+            // 曲名 (TITLE行)
+            Text(
+                text = trackTitle.uppercase(),
+                color = Color(0xFF1E2330), // ヴィンテージ濃紺インク
+                fontSize = 9.sp,
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // アーティスト名 (ARTIST行)
+            Text(
+                text = artistName.uppercase(),
+                color = Color(0xFF353C4D),
+                fontSize = 8.sp,
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
 
-        // --- LAYER 5: 窓ガラス表面の斜め反射光 (Glass Glare) ---
+        // --- LAYER 6: アクリル窓の微かな反射ハイライト (Glass Glare) ---
         Canvas(modifier = Modifier.fillMaxSize()) {
-            val winW = size.width * 0.66f
-            val winH = size.height * 0.44f
-            val winX = (size.width - winW) / 2f
-            val winY = size.height * (200f / 516f)
+            val winW = size.width * 0.212f
+            val winH = size.height * 0.230f
+            val winX = size.width * 0.3935f
+            val winY = size.height * 0.370f
 
             val glareBrush = Brush.linearGradient(
                 colors = listOf(
                     Color.White.copy(alpha = 0.00f),
-                    Color.White.copy(alpha = 0.06f),
-                    Color.White.copy(alpha = 0.14f),
+                    Color.White.copy(alpha = 0.05f),
+                    Color.White.copy(alpha = 0.12f),
                     Color.White.copy(alpha = 0.02f),
                     Color.White.copy(alpha = 0.00f)
                 ),
-                start = Offset(winX + winW * 0.15f, winY),
-                end = Offset(winX + winW * 0.65f, winY + winH)
+                start = Offset(winX + winW * 0.1f, winY),
+                end = Offset(winX + winW * 0.8f, winY + winH)
             )
 
             drawRoundRect(
                 brush = glareBrush,
                 topLeft = Offset(winX, winY),
                 size = Size(winW, winH),
-                cornerRadius = CornerRadius(12f, 12f)
+                cornerRadius = CornerRadius(6f, 6f)
             )
         }
     }
 }
 
 /**
- * 窓の奥で見える磁気テープの動的巻き量（左右リール間移行）
+ * リアルな酸化鉄磁気テープの動的巻き取り描画
  */
-private fun DrawScope.drawTapeWinding(
+private fun DrawScope.drawVintageTapeWinding(
     progress: Float,
     leftCenter: Offset,
     rightCenter: Offset,
@@ -378,24 +474,24 @@ private fun DrawScope.drawTapeWinding(
     val rLeft = sqrt(hubR * hubR + (maxR * maxR - hubR * hubR) * (1f - progress))
     val rRight = sqrt(hubR * hubR + (maxR * maxR - hubR * hubR) * progress)
 
-    val tapeColor = Color(0xFF2C1E17)
-    val tapeRimColor = Color(0xFF4A3428)
+    val tapeColor = Color(0xFF281C15)       // リアルな酸化鉄ダークブラウン
+    val tapeRimColor = Color(0xFF453023)    // 外周の光沢リム
 
     // 左テープ巻き
     drawCircle(tapeColor, rLeft, leftCenter)
-    drawCircle(tapeRimColor, rLeft, leftCenter, style = Stroke(2f))
+    drawCircle(tapeRimColor, rLeft, leftCenter, style = Stroke(1.5f))
 
     // 右テープ巻き
     drawCircle(tapeColor, rRight, rightCenter)
-    drawCircle(tapeRimColor, rRight, rightCenter, style = Stroke(2f))
+    drawCircle(tapeRimColor, rRight, rightCenter, style = Stroke(1.5f))
 
     // 下部テープ走行ライン
-    val tapeY = leftCenter.y + maxR * 0.95f
+    val tapeY = leftCenter.y + maxR * 0.96f
     drawLine(
         color = tapeColor,
-        start = Offset(leftCenter.x - rLeft * 0.7f, tapeY),
-        end = Offset(rightCenter.x + rRight * 0.7f, tapeY),
-        strokeWidth = 3f
+        start = Offset(leftCenter.x - rLeft * 0.65f, tapeY),
+        end = Offset(rightCenter.x + rRight * 0.65f, tapeY),
+        strokeWidth = 2.5f
     )
 }
 

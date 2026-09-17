@@ -153,11 +153,13 @@ class MainActivity : ComponentActivity() {
                         return true
                     }
                 }
-                KeyEvent.KEYCODE_BUTTON_X -> {
+                KeyEvent.KEYCODE_BUTTON_X,
+                KeyEvent.KEYCODE_X -> {
                     viewModel.onButtonX()
                     return true
                 }
-                KeyEvent.KEYCODE_BUTTON_Y -> {
+                KeyEvent.KEYCODE_BUTTON_Y,
+                KeyEvent.KEYCODE_Y -> {
                     viewModel.onButtonY()
                     return true
                 }
@@ -291,7 +293,10 @@ fun MainScreen(viewModel: MainViewModel) {
             }
 
             // 3. 物理キーガイド・フッターバー
-            KeyGuideFooter(currentScreen = currentScreen)
+            KeyGuideFooter(
+                currentScreen = currentScreen,
+                onToggleStyle = { viewModel.togglePlayerStyle() }
+            )
         }
     }
 }
@@ -385,7 +390,7 @@ private fun TabBadge(text: String, isActive: Boolean = false, isButton: Boolean 
 }
 
 @Composable
-private fun KeyGuideFooter(currentScreen: AppScreen) {
+private fun KeyGuideFooter(currentScreen: AppScreen, onToggleStyle: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -400,13 +405,14 @@ private fun KeyGuideFooter(currentScreen: AppScreen) {
         KeyGuideItem(key = "B", desc = "BACK")
         KeyGuideItem(key = "L2/R2", desc = "TRACK")
         KeyGuideItem(key = "L1/R1", desc = "VIEW")
-        KeyGuideItem(key = "X", desc = "STYLE")
+        KeyGuideItem(key = "X", desc = "STYLE", onClick = onToggleStyle)
     }
 }
 
 @Composable
-private fun KeyGuideItem(key: String, desc: String) {
+private fun KeyGuideItem(key: String, desc: String, onClick: (() -> Unit)? = null) {
     Row(
+        modifier = if (onClick != null) Modifier.clickable { onClick() } else Modifier,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(

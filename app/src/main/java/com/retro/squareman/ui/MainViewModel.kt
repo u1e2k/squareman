@@ -42,12 +42,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val currentScreen: StateFlow<AppScreen> = _currentScreen.asStateFlow()
 
     // プレイヤーデザインスタイル (DIGITAL, RETRO_CASSETTE, SKELETON_CASSETTE)
-    private val initialStyleName = prefs.getString("player_style", PlayerStyle.DIGITAL.name)
+    private val initialStyleName = prefs.getString("player_style", PlayerStyle.SKELETON_CASSETTE.name)
     private val _playerStyle = MutableStateFlow(
         try {
-            PlayerStyle.valueOf(initialStyleName ?: PlayerStyle.DIGITAL.name)
+            PlayerStyle.valueOf(initialStyleName ?: PlayerStyle.SKELETON_CASSETTE.name)
         } catch (_: Exception) {
-            PlayerStyle.DIGITAL
+            PlayerStyle.SKELETON_CASSETTE
         }
     )
     val playerStyle: StateFlow<PlayerStyle> = _playerStyle.asStateFlow()

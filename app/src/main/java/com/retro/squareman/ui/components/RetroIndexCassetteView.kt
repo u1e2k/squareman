@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -89,20 +90,23 @@ fun RetroIndexCassetteView(
         }
     }
 
-    val vibrantRed = Color(0xFFE50914)
+    val vintageRed = Color(0xFFC92A2A)
+    val paperBg = Color(0xFFFAF7F0)
+    val paperLine = Color(0xFFDDD5C7)
+    val textInk = Color(0xFF1C2028)
 
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(Color(0xFF121418))
     ) {
-        // --- 1. 上部: 白地インデックスカード領域 ---
+        // --- 1. 上部: ヴィンテージ・インデックスカード領域 ---
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(0.32f)
-                .background(Color.White)
-                .padding(horizontal = 14.dp, vertical = 6.dp),
+                .weight(0.34f)
+                .background(paperBg)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.SpaceEvenly
         ) {
             // 1行目: INDEX + 曲名
@@ -112,16 +116,16 @@ fun RetroIndexCassetteView(
             ) {
                 Text(
                     text = "INDEX",
-                    color = Color.Black,
-                    fontSize = 11.sp,
-                    fontFamily = FontFamily.SansSerif,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.width(72.dp)
+                    color = Color(0xFF7A7060),
+                    fontSize = 10.5.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.width(68.dp)
                 )
                 Text(
                     text = track?.title ?: "PSPMAN",
-                    color = Color.Black,
-                    fontSize = 17.sp,
+                    color = textInk,
+                    fontSize = 16.sp,
                     fontFamily = FontFamily.SansSerif,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
@@ -129,17 +133,24 @@ fun RetroIndexCassetteView(
                 )
             }
 
-            HorizontalDivider(color = Color.Black, thickness = 2.dp)
+            HorizontalDivider(color = paperLine, thickness = 1.5.dp)
 
             // 2行目: アーティスト名
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Spacer(modifier = Modifier.width(72.dp))
+                Text(
+                    text = "ARTIST",
+                    color = Color(0xFF8A8070),
+                    fontSize = 9.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.width(68.dp)
+                )
                 Text(
                     text = track?.artist ?: "OBSOLETESONY",
-                    color = Color.Black,
+                    color = Color(0xFF323846),
                     fontSize = 13.sp,
                     fontFamily = FontFamily.SansSerif,
                     fontWeight = FontWeight.Normal,
@@ -148,18 +159,25 @@ fun RetroIndexCassetteView(
                 )
             }
 
-            HorizontalDivider(color = Color.Black, thickness = 1.dp)
+            HorizontalDivider(color = paperLine, thickness = 1.dp)
 
             // 3行目: アルバム名
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Spacer(modifier = Modifier.width(72.dp))
                 Text(
-                    text = (track?.album ?: "DIGITAL MUSIC PLAYER").uppercase(),
-                    color = Color(0xFF333333),
-                    fontSize = 11.5.sp,
+                    text = "ALBUM",
+                    color = Color(0xFF8A8070),
+                    fontSize = 9.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.width(68.dp)
+                )
+                Text(
+                    text = (track?.album ?: "CASSETTE COLLECTION").uppercase(),
+                    color = Color(0xFF5A6070),
+                    fontSize = 11.sp,
                     fontFamily = FontFamily.SansSerif,
                     fontWeight = FontWeight.Normal,
                     maxLines = 1,
@@ -168,13 +186,13 @@ fun RetroIndexCassetteView(
             }
         }
 
-        // --- 2. 中央: 鮮烈な赤色バンド ＆ 黒ブロック窓 ---
+        // --- 2. 中央: レトロレッドバンド ＆ カセット窓 ---
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(0.44f)
-                .background(vibrantRed)
-                .padding(vertical = 12.dp)
+                .weight(0.42f)
+                .background(vintageRed)
+                .padding(vertical = 10.dp)
         ) {
             // 左端: A / JAPAN
             Column(
@@ -185,15 +203,15 @@ fun RetroIndexCassetteView(
             ) {
                 Text(
                     text = "A",
-                    color = Color.Black,
-                    fontSize = 34.sp,
+                    color = Color(0xFF141820),
+                    fontSize = 32.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = FontFamily.SansSerif
                 )
                 Text(
                     text = "JAPAN",
-                    color = Color.Black,
-                    fontSize = 8.5.sp,
+                    color = Color(0xFF141820),
+                    fontSize = 8.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = FontFamily.SansSerif
                 )
@@ -205,7 +223,7 @@ fun RetroIndexCassetteView(
                     .align(Alignment.Center)
                     .fillMaxWidth(0.76f)
                     .fillMaxSize()
-                    .background(Color.Black)
+                    .background(Color(0xFF0F1115))
             ) {
                 Canvas(modifier = Modifier.fillMaxSize()) {
                     drawRetroIndexCassette(
@@ -218,15 +236,30 @@ fun RetroIndexCassetteView(
             }
         }
 
-        // --- 3. 下部: ブラックボディ & タイムコード ---
-        Box(
+        // --- 3. 下部: レトロデッキコンソール & 進行バー & タイムコード ---
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(0.24f)
-                .background(Color.Black)
-                .padding(horizontal = 16.dp),
-            contentAlignment = Alignment.Center
+                .background(Color(0xFF121418))
+                .padding(horizontal = 16.dp, vertical = 6.dp),
+            verticalArrangement = Arrangement.SpaceEvenly
         ) {
+            // プログレスバー
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(4.dp)
+                    .background(Color(0xFF222630), RoundedCornerShape(2.dp))
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(fraction = progress)
+                        .fillMaxSize()
+                        .background(Color(0xFFFF9F1C), RoundedCornerShape(2.dp))
+                )
+            }
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -234,24 +267,23 @@ fun RetroIndexCassetteView(
             ) {
                 Text(
                     text = formatTime(currentPositionMs),
-                    color = Color(0xFF808080),
-                    fontSize = 13.sp,
+                    color = Color(0xFFFF9F1C),
+                    fontSize = 12.sp,
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = if (isPlaying) "PLAYING ▶" else "STOPPED ❚❚",
-                    color = if (isPlaying) vibrantRed else Color(0xFF505050),
-                    fontSize = 11.5.sp,
+                    text = if (isPlaying) "PLAY ▶" else "PAUSE ❚❚",
+                    color = if (isPlaying) Color(0xFF38EF7D) else Color(0xFF6B7280),
+                    fontSize = 11.sp,
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
                     text = formatTime(durationMs),
-                    color = Color(0xFF808080),
-                    fontSize = 13.sp,
-                    fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Bold
+                    color = Color(0xFF8E95A5),
+                    fontSize = 11.sp,
+                    fontFamily = FontFamily.Monospace
                 )
             }
         }

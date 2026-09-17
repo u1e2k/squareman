@@ -42,7 +42,7 @@ Anbernic、Retroid Pocket、Miyoo、AYNなどのポータブルゲーム機型An
 | **BUTTON_A / DPAD_CENTER** | ライブラリ画面 | 決定（選択トラックの再生開始・プレイヤー画面へ移行） |
 | | プレイヤー画面 | 決定 / 再生・一時停止トグル |
 | **BUTTON_B / BACK** | 全画面共通 | 前のビューへ戻る（プレイヤー/スペアナからライブラリへ） |
-| **BUTTON_X** | プレイヤー画面 | デザインスタイル切り替え（`DIGITAL` ⇔ `INDEX CASSETTE` ⇔ `SKELETON`） |
+| **BUTTON_X** | プレイヤー画面 | デザインスタイル切り替え（`80s VINTAGE` ⇔ `INDEX CASSETTE` ⇔ `DIGITAL`） |
 | **BUTTON_Y** | プレイヤー画面 | リピートモード切り替え（`OFF` ⇔ `ALL` ⇔ `ONE`） |
 | | ライブラリ画面 | シャッフルモード切り替え（`ON` ⇔ `OFF`） |
 | **BUTTON_L1 / R1** | 全画面共通 | 画面サイクリック切り替え（`LIBRARY` ⇔ `PLAYER` ⇔ `EQ/SPECTRUM`） |
