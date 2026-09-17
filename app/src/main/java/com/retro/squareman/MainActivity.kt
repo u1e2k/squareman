@@ -168,6 +168,14 @@ class MainActivity : ComponentActivity() {
                     viewModel.onButtonR1()
                     return true
                 }
+                KeyEvent.KEYCODE_BUTTON_L2 -> {
+                    viewModel.onButtonL2()
+                    return true
+                }
+                KeyEvent.KEYCODE_BUTTON_R2 -> {
+                    viewModel.onButtonR2()
+                    return true
+                }
             }
         }
         return super.dispatchKeyEvent(event)
@@ -378,11 +386,12 @@ private fun KeyGuideFooter(currentScreen: AppScreen) {
         horizontalArrangement = Arrangement.SpaceAround,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        KeyGuideItem(key = "DPAD", desc = if (currentScreen == AppScreen.LIBRARY) "SELECT/SEEK" else "VOL/SEEK")
-        KeyGuideItem(key = "A", desc = if (currentScreen == AppScreen.LIBRARY) "PLAY" else "PLAY/PAUSE")
+        KeyGuideItem(key = "DPAD", desc = if (currentScreen == AppScreen.LIBRARY) "SELECT" else "NAVI/SEEK")
+        KeyGuideItem(key = "A", desc = "OK")
         KeyGuideItem(key = "B", desc = "BACK")
-        KeyGuideItem(key = "X", desc = "STYLE")
+        KeyGuideItem(key = "L2/R2", desc = "TRACK")
         KeyGuideItem(key = "L1/R1", desc = "VIEW")
+        KeyGuideItem(key = "X", desc = "STYLE")
     }
 }
 

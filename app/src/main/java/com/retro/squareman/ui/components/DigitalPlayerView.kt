@@ -39,16 +39,16 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.retro.squareman.data.model.Track
 
 /**
- * PSPMAN 実機スタイル 1: デジタル・プレイヤー UI (画像1を忠実に再現)
+ * Walkman / PSPMAN 風デジタル・プレイヤー UI (1:1 正方形ディスプレイ最適化・中央縦配置)
  */
 @Composable
 fun DigitalPlayerView(
@@ -71,32 +71,31 @@ fun DigitalPlayerView(
     }
 
     val orangeRed = Color(0xFFE83A14)
-    val darkBg = Color(0xFF111215)
-    val textMuted = Color(0xFF868B96)
-    val textSub = Color(0xFF535862)
+    val darkBg = Color(0xFF101114)
+    val textMuted = Color(0xFF8E95A5)
+    val textSub = Color(0xFF5B6170)
 
-    Row(
+    Column(
         modifier = modifier
             .fillMaxSize()
             .background(darkBg)
-            .padding(14.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 24.dp, vertical = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.SpaceBetween
     ) {
-        // --- 左側: アートワーク領域 ---
+        // --- 1. 上部〜中央: 正方形アートワーク領域 (中央ドカン配置) ---
         Column(
-            modifier = Modifier
-                .weight(0.44f)
-                .fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            modifier = Modifier.padding(top = 4.dp)
         ) {
             Box(
                 modifier = Modifier
-                    .fillMaxWidth(0.92f)
+                    .size(190.dp)
                     .aspectRatio(1f)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(Color(0xFF181A20))
-                    .padding(4.dp),
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Color(0xFF181B22))
+                    .border(1.dp, Color(0xFF282C38), RoundedCornerShape(10.dp))
+                    .padding(6.dp),
                 contentAlignment = Alignment.Center
             ) {
                 if (track?.artwork != null) {
@@ -105,10 +104,9 @@ fun DigitalPlayerView(
                         contentDescription = "Artwork",
                         modifier = Modifier
                             .fillMaxSize()
-                            .clip(RoundedCornerShape(4.dp))
+                            .clip(RoundedCornerShape(8.dp))
                     )
                 } else {
-                    // PSPMAN 特徴的なオレンジドットマトリクスアート
                     PspmanDotMatrixArt(
                         color = orangeRed,
                         modifier = Modifier.fillMaxSize()
@@ -116,9 +114,9 @@ fun DigitalPlayerView(
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
-            // オーディオコーデック情報
+            // オーディオコーデック表記
             val codecText = if (track?.filePath?.lowercase()?.endsWith(".flac") == true) {
                 "FLAC 44.1 kHz / 16 bit"
             } else if (track?.filePath?.lowercase()?.endsWith(".wav") == true) {
@@ -129,69 +127,68 @@ fun DigitalPlayerView(
             Text(
                 text = codecText,
                 color = textMuted,
-                fontSize = 10.sp,
+                fontSize = 10.5.sp,
                 fontFamily = FontFamily.SansSerif
             )
         }
 
-        Spacer(modifier = Modifier.width(12.dp))
-
-        // --- 右側: メタデータ & シークバー & コントロール ---
+        // --- 2. メタデータ (曲名・アーティスト・アルバム) ---
         Column(
-            modifier = Modifier
-                .weight(0.56f)
-                .fillMaxSize(),
-            verticalArrangement = Arrangement.Center
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // タイトル & お気に入りスター
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth(0.92f),
+                horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = track?.title ?: "PSPMAN",
                     color = Color.White,
                     fontSize = 20.sp,
-                    fontWeight = FontWeight.Normal,
+                    fontWeight = FontWeight.Bold,
                     fontFamily = FontFamily.SansSerif,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.weight(1f, fill = false)
                 )
+                Spacer(modifier = Modifier.width(6.dp))
                 Icon(
                     imageVector = Icons.Default.StarBorder,
                     contentDescription = "Favorite",
                     tint = textMuted,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(18.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.height(3.dp))
+            Spacer(modifier = Modifier.height(2.dp))
 
-            // アーティスト名
             Text(
                 text = track?.artist ?: "OBSOLETESONY",
-                color = Color(0xFFC0C4CC),
+                color = Color(0xFFCFD4DC),
                 fontSize = 13.sp,
                 fontFamily = FontFamily.SansSerif,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center
             )
 
-            // アルバム/サブタイトル
             Text(
                 text = track?.album ?: "Digital Music Player",
                 color = textSub,
-                fontSize = 12.sp,
+                fontSize = 11.5.sp,
                 fontFamily = FontFamily.SansSerif,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center
             )
+        }
 
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // タイムコード (00:06 / 00:30)
+        // --- 3. シークバー ＆ タイムコード ---
+        Column(
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -210,7 +207,6 @@ fun DigitalPlayerView(
                 )
             }
 
-            // シークバー (プログレスライン + 白丸Thumb)
             Slider(
                 value = progress,
                 onValueChange = { newProgress ->
@@ -220,104 +216,97 @@ fun DigitalPlayerView(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(20.dp),
+                    .height(18.dp),
                 colors = SliderDefaults.colors(
                     thumbColor = Color.White,
-                    activeTrackColor = Color(0xFFD4D8E0),
-                    inactiveTrackColor = Color(0xFF383C46)
+                    activeTrackColor = Color(0xFFE2E6EE),
+                    inactiveTrackColor = Color(0xFF2E323E)
                 )
             )
+        }
 
-            Spacer(modifier = Modifier.height(8.dp))
+        // --- 4. コントロールボタン列 (シャッフル, |<<, 再生[赤丸], >>|, リピート) ---
+        Row(
+            modifier = Modifier
+                .fillMaxWidth(0.95f)
+                .padding(bottom = 6.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // シャッフル
+            Icon(
+                imageVector = Icons.Default.Shuffle,
+                contentDescription = "Shuffle",
+                tint = textMuted,
+                modifier = Modifier.size(20.dp)
+            )
 
-            // コントロールボタン列 (シャッフル, |<<, 再生[赤丸], >>|, リピート)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            // PREV
+            Icon(
+                imageVector = Icons.Default.SkipPrevious,
+                contentDescription = "Previous",
+                tint = Color.White,
+                modifier = Modifier
+                    .size(28.dp)
+                    .clickable { onSkipPrevious() }
+            )
+
+            // PLAY / PAUSE (赤丸アクセントリング)
+            Box(
+                modifier = Modifier
+                    .size(54.dp)
+                    .clip(CircleShape)
+                    .border(2.5.dp, orangeRed, CircleShape)
+                    .clickable { onTogglePlayPause() },
+                contentAlignment = Alignment.Center
             ) {
-                // シャッフル
                 Icon(
-                    imageVector = Icons.Default.Shuffle,
-                    contentDescription = "Shuffle",
-                    tint = textMuted,
-                    modifier = Modifier.size(18.dp)
-                )
-
-                // PREV
-                Icon(
-                    imageVector = Icons.Default.SkipPrevious,
-                    contentDescription = "Previous",
+                    imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                    contentDescription = "Play/Pause",
                     tint = Color.White,
-                    modifier = Modifier
-                        .size(24.dp)
-                        .clickable { onSkipPrevious() }
-                )
-
-                // PLAY / PAUSE (赤丸アクセントリング)
-                Box(
-                    modifier = Modifier
-                        .size(46.dp)
-                        .clip(CircleShape)
-                        .border(2.dp, orangeRed, CircleShape)
-                        .clickable { onTogglePlayPause() },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                        contentDescription = "Play/Pause",
-                        tint = Color.White,
-                        modifier = Modifier.size(26.dp)
-                    )
-                }
-
-                // NEXT
-                Icon(
-                    imageVector = Icons.Default.SkipNext,
-                    contentDescription = "Next",
-                    tint = Color.White,
-                    modifier = Modifier
-                        .size(24.dp)
-                        .clickable { onSkipNext() }
-                )
-
-                // リピート
-                Icon(
-                    imageVector = Icons.Default.Repeat,
-                    contentDescription = "Repeat",
-                    tint = textMuted,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(32.dp)
                 )
             }
+
+            // NEXT
+            Icon(
+                imageVector = Icons.Default.SkipNext,
+                contentDescription = "Next",
+                tint = Color.White,
+                modifier = Modifier
+                    .size(28.dp)
+                    .clickable { onSkipNext() }
+            )
+
+            // リピート
+            Icon(
+                imageVector = Icons.Default.Repeat,
+                contentDescription = "Repeat",
+                tint = textMuted,
+                modifier = Modifier.size(20.dp)
+            )
         }
     }
 }
 
-/**
- * PSPMAN 実機ジャケットのドットマトリクス幾何学アートを Canvas で描画
- */
 @Composable
 private fun PspmanDotMatrixArt(color: Color, modifier: Modifier = Modifier) {
-    Canvas(modifier = modifier.padding(10.dp)) {
+    Canvas(modifier = modifier.padding(8.dp)) {
         val w = size.width
         val h = size.height
 
-        // 7列 x 7行のグリッド
         val cols = 7
         val rows = 7
         val stepX = w / (cols - 1)
         val stepY = h / (rows - 1)
 
-        // PSPMAN の特徴的な右上がりの円弧ドット分布
         for (c in 0 until cols) {
             for (r in 0 until rows) {
                 val x = c * stepX
                 val y = r * stepY
 
-                // 列が進むにつれて半径が大きくなる
-                val baseRadius = 2.2f + (c * 1.8f)
+                val baseRadius = 2.4f + (c * 2.0f)
 
-                // 一部のドットを強調またはマスクして幾何学模様を形成
                 val shouldDraw = when {
                     c == 6 && (r in 2..5) -> true
                     c == 5 && (r in 1..6) -> true

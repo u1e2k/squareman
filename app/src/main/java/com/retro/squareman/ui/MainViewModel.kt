@@ -3,7 +3,6 @@ package com.retro.squareman.ui
 import android.app.Application
 import android.content.ComponentName
 import android.content.Context
-import android.media.AudioManager
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
@@ -76,8 +75,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private var controllerFuture: ListenableFuture<MediaController>? = null
     private var mediaController: MediaController? = null
     private var progressPollJob: Job? = null
-
-    private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
     init {
         initMediaController()
@@ -184,57 +181,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // --- 物理キー入力ルーティング ---
-
-    fun onDpadUp() {
-        when (_currentScreen.value) {
-            AppScreen.LIBRARY -> {
-                val current = _selectedTrackIndex.value
-                if (current > 0) {
-                    _selectedTrackIndex.value = current - 1
-                }
-            }
-            AppScreen.CASSETTE, AppScreen.SPECTRUM_FULL -> {
-                // 音量アップ
-                audioManager.adjustStreamVolume(
-                    AudioManager.STREAM_MUSIC,
-                    AudioManager.ADJUST_RAISE,
-                    AudioManager.FLAG_SHOW_UI
-                )
-            }
-        }
-    }
-
-    fun onDpadDown() {
-        when (_currentScreen.value) {
-            AppScreen.LIBRARY -> {
-                val current = _selectedTrackIndex.value
-                val max = _tracks.value.size - 1
-                if (current < max) {
-                    _selectedTrackIndex.value = current + 1
-                }
-            }
-            AppScreen.CASSETTE, AppScreen.SPECTRUM_FULL -> {
-                // 音量ダウン
-                audioManager.adjustStreamVolume(
-                    AudioManager.STREAM_MUSIC,
-                    AudioManager.ADJUST_LOWER,
-                    AudioManager.FLAG_SHOW_UI
-                )
-            }
-        }
-    }
-
-    fun onDpadLeft() {
-        // 前の曲へスキップ
-        playPreviousTrack()
-    }
-
-    fun onDpadRight() {
-        // 次の曲へスキップ
-        playNextTrack()
-    }
-
     fun onFastForward() {
         mediaController?.let { controller ->
             val target = (controller.currentPosition + 5000L).coerceAtMost(controller.duration)
@@ -251,10 +197,73 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    // --- 物理キー入力ルーティング (DPADは純粋なUI操作に専念) ---
+
+    fun onDpadUp() {
+        when (_currentScreen.value) {
+            AppScreen.LIBRARY -> {
+                val current = _selectedTrackIndex.value
+                if (current > 0) {
+                    _selectedTrackIndex.value = current - 1
+                }
+            }
+            AppScreen.CASSETTE, AppScreen.SPECTRUM_FULL -> {
+                // プレイヤー画面でのUI操作（上方向）
+            }
+        }
+    }
+
+    fun onDpadDown() {
+        when (_currentScreen.value) {
+            AppScreen.LIBRARY -> {
+                val current = _selectedTrackIndex.value
+                val max = _tracks.value.size - 1
+                if (current < max) {
+                    _selectedTrackIndex.value = current + 1
+                }
+            }
+            AppScreen.CASSETTE, AppScreen.SPECTRUM_FULL -> {
+                // プレイヤー画面でのUI操作（下方向）
+            }
+        }
+    }
+
+    fun onDpadLeft() {
+        when (_currentScreen.value) {
+            AppScreen.CASSETTE, AppScreen.SPECTRUM_FULL -> {
+                // プレイヤー画面ではシーク巻き戻し（5秒）
+                onRewind()
+            }
+            AppScreen.LIBRARY -> {
+                // ライブラリ画面でのページアップ等のUI操作
+                val current = _selectedTrackIndex.value
+                _selectedTrackIndex.value = (current - 5).coerceAtLeast(0)
+            }
+        }
+    }
+
+    fun onDpadRight() {
+        when (_currentScreen.value) {
+            AppScreen.CASSETTE, AppScreen.SPECTRUM_FULL -> {
+                // プレイヤー画面ではシーク早送り（5秒）
+                onFastForward()
+            }
+            AppScreen.LIBRARY -> {
+                // ライブラリ画面でのページダウン等のUI操作
+                val current = _selectedTrackIndex.value
+                val max = _tracks.value.size - 1
+                _selectedTrackIndex.value = (current + 5).coerceAtMost(max)
+            }
+        }
+    }
+
+    /**
+     * 決定キー (Aボタン)
+     */
     fun onButtonA() {
         when (_currentScreen.value) {
             AppScreen.LIBRARY -> {
-                // リスト選択中の曲を再生し、カセット画面へ移行
+                // リスト選択中の曲を決定して再生開始、プレイヤー画面へ移行
                 val list = _tracks.value
                 val index = _selectedTrackIndex.value
                 if (index in list.indices) {
@@ -263,6 +272,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
             AppScreen.CASSETTE, AppScreen.SPECTRUM_FULL -> {
+                // 再生 / 一時停止トグル決定
                 togglePlayPause()
             }
         }
@@ -273,7 +283,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             AppScreen.SPECTRUM_FULL -> _currentScreen.value = AppScreen.CASSETTE
             AppScreen.CASSETTE -> _currentScreen.value = AppScreen.LIBRARY
             AppScreen.LIBRARY -> {
-                // 既にライブラリの場合はそのまま
+                // ライブラリ画面の場合はそのまま
             }
         }
     }
@@ -284,7 +294,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun onButtonL1() {
-        // 画面を左循環: SPECTRUM_FULL -> CASSETTE -> LIBRARY
+        // ビュー左切り替え: SPECTRUM_FULL -> CASSETTE -> LIBRARY
         _currentScreen.value = when (_currentScreen.value) {
             AppScreen.SPECTRUM_FULL -> AppScreen.CASSETTE
             AppScreen.CASSETTE -> AppScreen.LIBRARY
@@ -293,12 +303,26 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun onButtonR1() {
-        // 画面を右循環: LIBRARY -> CASSETTE -> SPECTRUM_FULL
+        // ビュー右切り替え: LIBRARY -> CASSETTE -> SPECTRUM_FULL
         _currentScreen.value = when (_currentScreen.value) {
             AppScreen.LIBRARY -> AppScreen.CASSETTE
             AppScreen.CASSETTE -> AppScreen.SPECTRUM_FULL
             AppScreen.SPECTRUM_FULL -> AppScreen.LIBRARY
         }
+    }
+
+    /**
+     * L2ボタン: 前の曲へスキップ
+     */
+    fun onButtonL2() {
+        playPreviousTrack()
+    }
+
+    /**
+     * R2ボタン: 次の曲へスキップ
+     */
+    fun onButtonR2() {
+        playNextTrack()
     }
 
     fun playTrack(track: Track) {

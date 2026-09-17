@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -28,6 +28,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -41,7 +42,7 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 
 /**
- * PSPMAN 実機スタイル 2: レトロ・インデックス カセット UI (画像2を忠実に再現)
+ * PSPMAN 実機スタイル 2: レトロ・インデックス カセット UI (画像2を精密再現)
  */
 @Composable
 fun RetroIndexCassetteView(
@@ -88,7 +89,7 @@ fun RetroIndexCassetteView(
         }
     }
 
-    val vibrantRed = Color(0xFFE50914) // 画像2の鮮明な赤
+    val vibrantRed = Color(0xFFE50914)
 
     Column(
         modifier = modifier
@@ -99,9 +100,9 @@ fun RetroIndexCassetteView(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(0.38f)
+                .weight(0.32f)
                 .background(Color.White)
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(horizontal = 14.dp, vertical = 6.dp),
             verticalArrangement = Arrangement.SpaceEvenly
         ) {
             // 1行目: INDEX + 曲名
@@ -115,12 +116,12 @@ fun RetroIndexCassetteView(
                     fontSize = 11.sp,
                     fontFamily = FontFamily.SansSerif,
                     fontWeight = FontWeight.Medium,
-                    modifier = Modifier.width(68.dp)
+                    modifier = Modifier.width(72.dp)
                 )
                 Text(
                     text = track?.title ?: "PSPMAN",
                     color = Color.Black,
-                    fontSize = 16.sp,
+                    fontSize = 17.sp,
                     fontFamily = FontFamily.SansSerif,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
@@ -128,14 +129,14 @@ fun RetroIndexCassetteView(
                 )
             }
 
-            Divider(color = Color.Black, thickness = 1.5.dp)
+            HorizontalDivider(color = Color.Black, thickness = 2.dp)
 
             // 2行目: アーティスト名
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Spacer(modifier = Modifier.width(68.dp))
+                Spacer(modifier = Modifier.width(72.dp))
                 Text(
                     text = track?.artist ?: "OBSOLETESONY",
                     color = Color.Black,
@@ -147,18 +148,18 @@ fun RetroIndexCassetteView(
                 )
             }
 
-            Divider(color = Color.Black, thickness = 1.dp)
+            HorizontalDivider(color = Color.Black, thickness = 1.dp)
 
-            // 3行目: アルバム名 / フォーマット
+            // 3行目: アルバム名
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Spacer(modifier = Modifier.width(68.dp))
+                Spacer(modifier = Modifier.width(72.dp))
                 Text(
                     text = (track?.album ?: "DIGITAL MUSIC PLAYER").uppercase(),
                     color = Color(0xFF333333),
-                    fontSize = 12.sp,
+                    fontSize = 11.5.sp,
                     fontFamily = FontFamily.SansSerif,
                     fontWeight = FontWeight.Normal,
                     maxLines = 1,
@@ -167,42 +168,42 @@ fun RetroIndexCassetteView(
             }
         }
 
-        // --- 2. 中央: 鮮烈な赤色バンド ＆ カセット窓 ---
+        // --- 2. 中央: 鮮烈な赤色バンド ＆ 黒ブロック窓 ---
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(0.38f)
+                .weight(0.44f)
                 .background(vibrantRed)
-                .padding(vertical = 10.dp)
+                .padding(vertical = 12.dp)
         ) {
-            // 左端: A / JAPAN マーク
+            // 左端: A / JAPAN
             Column(
                 modifier = Modifier
                     .align(Alignment.CenterStart)
-                    .padding(start = 16.dp),
+                    .padding(start = 14.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
                     text = "A",
                     color = Color.Black,
-                    fontSize = 32.sp,
+                    fontSize = 34.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = FontFamily.SansSerif
                 )
                 Text(
                     text = "JAPAN",
                     color = Color.Black,
-                    fontSize = 8.sp,
+                    fontSize = 8.5.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = FontFamily.SansSerif
                 )
             }
 
-            // 中央: 黒背景カセットブロック ＆ 白リール ＆ テープ窓
+            // 中央: 黒カセットブロック
             Box(
                 modifier = Modifier
                     .align(Alignment.Center)
-                    .fillMaxWidth(0.74f)
+                    .fillMaxWidth(0.76f)
                     .fillMaxSize()
                     .background(Color.Black)
             ) {
@@ -233,22 +234,22 @@ fun RetroIndexCassetteView(
             ) {
                 Text(
                     text = formatTime(currentPositionMs),
-                    color = Color(0xFF707070),
-                    fontSize = 12.sp,
+                    color = Color(0xFF808080),
+                    fontSize = 13.sp,
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = if (isPlaying) "PLAYING" else "STOPPED",
-                    color = if (isPlaying) vibrantRed else Color(0xFF404040),
-                    fontSize = 11.sp,
+                    text = if (isPlaying) "PLAYING ▶" else "STOPPED ❚❚",
+                    color = if (isPlaying) vibrantRed else Color(0xFF505050),
+                    fontSize = 11.5.sp,
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
                     text = formatTime(durationMs),
-                    color = Color(0xFF707070),
-                    fontSize = 12.sp,
+                    color = Color(0xFF808080),
+                    fontSize = 13.sp,
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Bold
                 )
@@ -258,7 +259,7 @@ fun RetroIndexCassetteView(
 }
 
 /**
- * 画像2準拠の白抜き極太リールと中央の十文字テープ残量窓を描画
+ * 窓領域外へのテープはみ出しを clipRect で完全に防止し、白リールを端正に描画
  */
 private fun DrawScope.drawRetroIndexCassette(
     size: Size,
@@ -270,78 +271,83 @@ private fun DrawScope.drawRetroIndexCassette(
     val h = size.height
 
     val reelCenterY = h / 2f
-    val leftReelX = w * 0.20f
-    val rightReelX = w * 0.80f
-    val reelRadius = h * 0.38f
+    val leftReelX = w * 0.22f
+    val rightReelX = w * 0.78f
+    val reelRadius = h * 0.32f // 黒枠内に上品に収まるサイズ
 
     // 1. 中央テープ窓 (ダークスレートグレー)
-    val windowW = w * 0.38f
-    val windowH = h * 0.82f
+    val windowW = w * 0.36f
+    val windowH = h * 0.80f
     val windowLeft = (w - windowW) / 2f
     val windowTop = (h - windowH) / 2f
 
+    // 窓の背景
     drawRect(
-        color = Color(0xFF2A2E3B), // 画像2の窓色
+        color = Color(0xFF2A2E3B),
         topLeft = Offset(windowLeft, windowTop),
         size = Size(windowW, windowH)
     )
 
-    // テープ残量の左右円弧（暗い半円）
-    // 左側テープ巻き
-    val leftTapeRadius = (windowW * 0.65f) * (1f - progress * 0.7f)
-    drawCircle(
-        color = Color(0xFF1E212A),
-        radius = leftTapeRadius,
-        center = Offset(windowLeft, reelCenterY)
-    )
-    // 右側テープ巻き
-    val rightTapeRadius = (windowW * 0.65f) * (0.3f + progress * 0.7f)
-    drawCircle(
-        color = Color(0xFF1E212A),
-        radius = rightTapeRadius,
-        center = Offset(windowLeft + windowW, reelCenterY)
-    )
+    // ★重要: テープ残量の左右円弧は窓の範囲内だけにクリップする！
+    clipRect(
+        left = windowLeft,
+        top = windowTop,
+        right = windowLeft + windowW,
+        bottom = windowTop + windowH
+    ) {
+        // 左側テープ巻き
+        val leftTapeRadius = (windowW * 0.62f) * (1f - progress * 0.65f)
+        drawCircle(
+            color = Color(0xFF1E212A),
+            radius = leftTapeRadius,
+            center = Offset(windowLeft, reelCenterY)
+        )
+        // 右側テープ巻き
+        val rightTapeRadius = (windowW * 0.62f) * (0.35f + progress * 0.65f)
+        drawCircle(
+            color = Color(0xFF1E212A),
+            radius = rightTapeRadius,
+            center = Offset(windowLeft + windowW, reelCenterY)
+        )
 
-    // 中央十字目盛り線
-    val meterColor = Color(0xFF161820)
-    // 水平線
-    drawLine(
-        color = meterColor,
-        start = Offset(windowLeft + windowW * 0.12f, reelCenterY),
-        end = Offset(windowLeft + windowW * 0.88f, reelCenterY),
-        strokeWidth = 2.5f
-    )
-    // 3本の縦目盛り
-    val tickH = windowH * 0.55f
-    // 中央縦線（一番長い）
-    drawLine(
-        color = meterColor,
-        start = Offset(w / 2f, reelCenterY - tickH / 2f),
-        end = Offset(w / 2f, reelCenterY + tickH / 2f),
-        strokeWidth = 2.5f
-    )
-    // 左縦線
-    drawLine(
-        color = meterColor,
-        start = Offset(w / 2f - windowW * 0.24f, reelCenterY - tickH * 0.32f),
-        end = Offset(w / 2f - windowW * 0.24f, reelCenterY + tickH * 0.32f),
-        strokeWidth = 2f
-    )
-    // 右縦線
-    drawLine(
-        color = meterColor,
-        start = Offset(w / 2f + windowW * 0.24f, reelCenterY - tickH * 0.32f),
-        end = Offset(w / 2f + windowW * 0.24f, reelCenterY + tickH * 0.32f),
-        strokeWidth = 2f
-    )
+        // 中央十字目盛り線
+        val meterColor = Color(0xFF161820)
+        drawLine(
+            color = meterColor,
+            start = Offset(windowLeft + windowW * 0.10f, reelCenterY),
+            end = Offset(windowLeft + windowW * 0.90f, reelCenterY),
+            strokeWidth = 2.5f
+        )
+        val tickH = windowH * 0.52f
+        // 中央縦線
+        drawLine(
+            color = meterColor,
+            start = Offset(w / 2f, reelCenterY - tickH / 2f),
+            end = Offset(w / 2f, reelCenterY + tickH / 2f),
+            strokeWidth = 2.5f
+        )
+        // 左右縦目盛り
+        drawLine(
+            color = meterColor,
+            start = Offset(w / 2f - windowW * 0.24f, reelCenterY - tickH * 0.30f),
+            end = Offset(w / 2f - windowW * 0.24f, reelCenterY + tickH * 0.30f),
+            strokeWidth = 2f
+        )
+        drawLine(
+            color = meterColor,
+            start = Offset(w / 2f + windowW * 0.24f, reelCenterY - tickH * 0.30f),
+            end = Offset(w / 2f + windowW * 0.24f, reelCenterY + tickH * 0.30f),
+            strokeWidth = 2f
+        )
+    }
 
-    // 2. 左右の白抜き極太スプロケットリール (画像2の特徴的な太い白リングと四角い爪)
+    // 2. 左右の白抜き極太スプロケットリール
     drawBoldWhiteReel(Offset(leftReelX, reelCenterY), reelRadius, leftAngle)
     drawBoldWhiteReel(Offset(rightReelX, reelCenterY), reelRadius, rightAngle)
 }
 
 /**
- * 画像2に登場する白抜き極太リールの描画
+ * 白抜き極太リールの描画
  */
 private fun DrawScope.drawBoldWhiteReel(center: Offset, radius: Float, angle: Float) {
     rotate(angle, pivot = center) {

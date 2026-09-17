@@ -306,7 +306,7 @@ private fun SpriteCassetteLayers(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = totalHeight * 0.08f, start = totalWidth * 0.08f, end = totalWidth * 0.08f)
+                .padding(top = totalHeight * 0.05f, start = totalWidth * 0.12f, end = totalWidth * 0.12f)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
