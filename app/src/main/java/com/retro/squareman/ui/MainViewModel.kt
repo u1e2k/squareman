@@ -34,12 +34,24 @@ enum class AppScreen {
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val context: Context get() = getApplication<Application>().applicationContext
+    private val prefs = context.getSharedPreferences("squareman_settings", Context.MODE_PRIVATE)
     private val musicScanner = MusicScanner(context)
     val visualizer = SpectrumVisualizer()
 
     // 画面状態
     private val _currentScreen = MutableStateFlow(AppScreen.CASSETTE)
     val currentScreen: StateFlow<AppScreen> = _currentScreen.asStateFlow()
+
+    // プレイヤーデザインスタイル (DIGITAL, RETRO_CASSETTE, SKELETON_CASSETTE)
+    private val initialStyleName = prefs.getString("player_style", PlayerStyle.DIGITAL.name)
+    private val _playerStyle = MutableStateFlow(
+        try {
+            PlayerStyle.valueOf(initialStyleName ?: PlayerStyle.DIGITAL.name)
+        } catch (_: Exception) {
+            PlayerStyle.DIGITAL
+        }
+    )
+    val playerStyle: StateFlow<PlayerStyle> = _playerStyle.asStateFlow()
 
     // 楽曲リスト & 選択状態
     private val _tracks = MutableStateFlow<List<Track>>(emptyList())
@@ -149,6 +161,29 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    // --- スタイル切り替え ---
+
+    fun togglePlayerStyle() {
+        val styles = PlayerStyle.values()
+        val nextIndex = (_playerStyle.value.ordinal + 1) % styles.size
+        setPlayerStyle(styles[nextIndex])
+    }
+
+    fun setPlayerStyle(style: PlayerStyle) {
+        _playerStyle.value = style
+        prefs.edit().putString("player_style", style.name).apply()
+    }
+
+    // --- シーク操作 ---
+
+    fun seekTo(positionMs: Long) {
+        mediaController?.let { controller ->
+            val target = positionMs.coerceIn(0L, controller.duration.coerceAtLeast(0L))
+            controller.seekTo(target)
+            _currentPosition.value = target
+        }
+    }
+
     // --- 物理キー入力ルーティング ---
 
     fun onDpadUp() {
@@ -241,6 +276,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 // 既にライブラリの場合はそのまま
             }
         }
+    }
+
+    fun onButtonX() {
+        // Xボタンでスタイル切り替え（DIGITAL ⇔ INDEX CASSETTE ⇔ SKELETON）
+        togglePlayerStyle()
     }
 
     fun onButtonL1() {

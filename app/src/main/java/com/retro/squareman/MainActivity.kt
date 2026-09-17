@@ -24,7 +24,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -47,8 +46,11 @@ import androidx.core.content.ContextCompat
 import androidx.media3.common.util.UnstableApi
 import com.retro.squareman.ui.AppScreen
 import com.retro.squareman.ui.MainViewModel
+import com.retro.squareman.ui.PlayerStyle
 import com.retro.squareman.ui.components.CassetteDeckView
+import com.retro.squareman.ui.components.DigitalPlayerView
 import com.retro.squareman.ui.components.LibraryView
+import com.retro.squareman.ui.components.RetroIndexCassetteView
 import com.retro.squareman.ui.components.SpectrumAnalyzerView
 import com.retro.squareman.ui.theme.PSPAccentBlue
 import com.retro.squareman.ui.theme.RetroBorder
@@ -57,7 +59,6 @@ import com.retro.squareman.ui.theme.RetroFocusAmber
 import com.retro.squareman.ui.theme.RetroPanelBg
 import com.retro.squareman.ui.theme.RetroSurface
 import com.retro.squareman.ui.theme.RetroTextDim
-import com.retro.squareman.ui.theme.RetroTextPrimary
 import com.retro.squareman.ui.theme.RetroTextSecondary
 import com.retro.squareman.ui.theme.SquaremanTheme
 
@@ -69,7 +70,6 @@ class MainActivity : ComponentActivity() {
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
-        val audioGranted = permissions[Manifest.permission.RECORD_AUDIO] == true
         val storageGranted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             permissions[Manifest.permission.READ_MEDIA_AUDIO] == true
         } else {
@@ -153,6 +153,11 @@ class MainActivity : ComponentActivity() {
                         return true
                     }
                 }
+                KeyEvent.KEYCODE_BUTTON_X,
+                KeyEvent.KEYCODE_BUTTON_Y -> {
+                    viewModel.onButtonX()
+                    return true
+                }
                 KeyEvent.KEYCODE_BUTTON_L1,
                 KeyEvent.KEYCODE_PAGE_UP -> {
                     viewModel.onButtonL1()
@@ -173,6 +178,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainScreen(viewModel: MainViewModel) {
     val currentScreen by viewModel.currentScreen.collectAsState()
+    val playerStyle by viewModel.playerStyle.collectAsState()
     val tracks by viewModel.tracks.collectAsState()
     val selectedIndex by viewModel.selectedTrackIndex.collectAsState()
     val currentTrack by viewModel.currentPlayingTrack.collectAsState()
@@ -191,19 +197,20 @@ fun MainScreen(viewModel: MainViewModel) {
             .fillMaxSize()
             .focusRequester(rootFocusRequester)
             .focusable()
-            .onKeyEvent { keyEvent ->
-                // Compose 側でのバックアップハンドリング
-                false
-            },
+            .onKeyEvent { false },
         color = RetroDarkBg
     ) {
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            // 1. トップ・システムヘッダー (PSP / Walkman ステータスバー風)
-            TopStatusBar(currentScreen = currentScreen)
+            // 1. トップ・システムヘッダー
+            TopStatusBar(
+                currentScreen = currentScreen,
+                playerStyle = playerStyle,
+                onToggleStyle = { viewModel.togglePlayerStyle() }
+            )
 
-            // 2. メインコンテンツ領域 (1:1 / 4:3 レスポンシブ切替)
+            // 2. メインコンテンツ領域
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -223,12 +230,39 @@ fun MainScreen(viewModel: MainViewModel) {
                         )
                     }
                     AppScreen.CASSETTE -> {
-                        CassetteDeckView(
-                            track = currentTrack ?: tracks.getOrNull(selectedIndex),
-                            isPlaying = isPlaying,
-                            currentPositionMs = currentPosition,
-                            durationMs = duration
-                        )
+                        val activeTrack = currentTrack ?: tracks.getOrNull(selectedIndex)
+
+                        // 選択されたスタイルに応じて3種類のUIを描画
+                        when (playerStyle) {
+                            PlayerStyle.DIGITAL -> {
+                                DigitalPlayerView(
+                                    track = activeTrack,
+                                    isPlaying = isPlaying,
+                                    currentPositionMs = currentPosition,
+                                    durationMs = duration,
+                                    onTogglePlayPause = { viewModel.togglePlayPause() },
+                                    onSkipNext = { viewModel.playNextTrack() },
+                                    onSkipPrevious = { viewModel.playPreviousTrack() },
+                                    onSeekTo = { pos -> viewModel.seekTo(pos) }
+                                )
+                            }
+                            PlayerStyle.RETRO_CASSETTE -> {
+                                RetroIndexCassetteView(
+                                    track = activeTrack,
+                                    isPlaying = isPlaying,
+                                    currentPositionMs = currentPosition,
+                                    durationMs = duration
+                                )
+                            }
+                            PlayerStyle.SKELETON_CASSETTE -> {
+                                CassetteDeckView(
+                                    track = activeTrack,
+                                    isPlaying = isPlaying,
+                                    currentPositionMs = currentPosition,
+                                    durationMs = duration
+                                )
+                            }
+                        }
                     }
                     AppScreen.SPECTRUM_FULL -> {
                         SpectrumAnalyzerView(
@@ -246,7 +280,11 @@ fun MainScreen(viewModel: MainViewModel) {
 }
 
 @Composable
-private fun TopStatusBar(currentScreen: AppScreen) {
+private fun TopStatusBar(
+    currentScreen: AppScreen,
+    playerStyle: PlayerStyle,
+    onToggleStyle: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -266,12 +304,24 @@ private fun TopStatusBar(currentScreen: AppScreen) {
                 fontFamily = FontFamily.Monospace
             )
             Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = "WALKMAN OS",
-                color = RetroTextDim,
-                fontSize = 9.sp,
-                fontFamily = FontFamily.Monospace
-            )
+
+            // スタイル切替バッジ（タップまたはXボタン）
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(Color(0xFF252A38))
+                    .border(1.dp, Color(0xFF3B4359), RoundedCornerShape(3.dp))
+                    .clickable { onToggleStyle() }
+                    .padding(horizontal = 5.dp, vertical = 1.dp)
+            ) {
+                Text(
+                    text = "[X] ${playerStyle.label}",
+                    color = RetroFocusAmber,
+                    fontSize = 8.5.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
 
         // L1 / R1 タブ表示
@@ -281,8 +331,8 @@ private fun TopStatusBar(currentScreen: AppScreen) {
         ) {
             TabBadge("L1", isButton = true)
             TabBadge("LIB", isActive = currentScreen == AppScreen.LIBRARY)
-            TabBadge("DECK", isActive = currentScreen == AppScreen.CASSETTE)
-            TabBadge("EQ/VFD", isActive = currentScreen == AppScreen.SPECTRUM_FULL)
+            TabBadge("PLAYER", isActive = currentScreen == AppScreen.CASSETTE)
+            TabBadge("EQ", isActive = currentScreen == AppScreen.SPECTRUM_FULL)
             TabBadge("R1", isButton = true)
         }
     }
@@ -324,13 +374,14 @@ private fun KeyGuideFooter(currentScreen: AppScreen) {
             .fillMaxWidth()
             .background(RetroSurface)
             .border(1.dp, RetroBorder)
-            .padding(horizontal = 8.dp, vertical = 5.dp),
+            .padding(horizontal = 6.dp, vertical = 5.dp),
         horizontalArrangement = Arrangement.SpaceAround,
         verticalAlignment = Alignment.CenterVertically
     ) {
         KeyGuideItem(key = "DPAD", desc = if (currentScreen == AppScreen.LIBRARY) "SELECT/SEEK" else "VOL/SEEK")
         KeyGuideItem(key = "A", desc = if (currentScreen == AppScreen.LIBRARY) "PLAY" else "PLAY/PAUSE")
         KeyGuideItem(key = "B", desc = "BACK")
+        KeyGuideItem(key = "X", desc = "STYLE")
         KeyGuideItem(key = "L1/R1", desc = "VIEW")
     }
 }
@@ -349,16 +400,16 @@ private fun KeyGuideItem(key: String, desc: String) {
             Text(
                 text = key,
                 color = RetroFocusAmber,
-                fontSize = 8.5.sp,
+                fontSize = 8.sp,
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Bold
             )
         }
-        Spacer(modifier = Modifier.width(4.dp))
+        Spacer(modifier = Modifier.width(3.dp))
         Text(
             text = desc,
             color = RetroTextSecondary,
-            fontSize = 8.5.sp,
+            fontSize = 8.sp,
             fontFamily = FontFamily.Monospace
         )
     }

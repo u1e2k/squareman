@@ -41,7 +41,8 @@ Anbernic、Retroid Pocket、Miyoo、AYNなどのポータブルゲーム機型An
 | **BUTTON_A / DPAD_CENTER** | ライブラリ画面 | 選択トラックの決定・再生開始（カセット画面へ移行） |
 | | カセット / スペアナ画面 | 再生 / 一時停止トグル |
 | **BUTTON_B / BACK** | 全画面共通 | 前のビューへ戻る（カセット/スペアナからライブラリへ） |
-| **BUTTON_L1 / R1** | 全画面共通 | 画面サイクリック切り替え（`LIBRARY` ⇔ `CASSETTE` ⇔ `SPECTRUM_FULL`） |
+| **BUTTON_X / BUTTON_Y** | プレイヤー画面 | デザインスタイル切り替え（`DIGITAL` ⇔ `INDEX CASSETTE` ⇔ `SKELETON`） |
+| **BUTTON_L1 / R1** | 全画面共通 | 画面サイクリック切り替え（`LIBRARY` ⇔ `PLAYER` ⇔ `EQ/SPECTRUM`） |
 
 ---
 
